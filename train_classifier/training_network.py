@@ -126,4 +126,44 @@ def get_init_fn():
 	exclusions = []
 	if train_config['checkpoint_exclude_scopes']:
 		exclusions = [scope.strip()
-		              for scope in train_config['checkpoint_exclude_scopes'].split()]
+		              for scope in train_config['checkpoint_exclude_scopes'].split(',')]
+
+		variable_to_restore = []
+		for var in slim.get_model_variables():
+			excluded = False
+			for exclusion in exclusions:
+				if var.op.name.startswith(exclusion):
+					excluded = True
+					break
+			if not excluded:
+				variable_to_restore.append(var)
+
+		if tf.gfile.IsDirectory(train_config['checkpoint_path']):
+			checkpoint_path = tf.train.latest_checkpoint(train_config['checkpoint_path'])
+		else:
+			checkpoint_path = train_config['checkpoint_path']
+
+		tf.logging.info('Fune-tuning from %s' % checkpoint_path)
+
+		return slim.assign_from_checkpoint_fn(
+			checkpoint_path,
+			variable_to_restore,
+			ignore_missing_vars=train_config['ignore_missing_vars'])
+
+def train():
+	if not train_config['dataset_dir']:
+		raise ValueError('You must set the dataset directory in "train_config.py"')
+	tf.logging.set_verbosity(tf.logging.INFO)
+
+	with tf.Graph().as_default():
+		#========================================================#
+		# Config model deploy #
+		#========================================================#
+		# TODO add a model deploy funtion and create global variable
+
+		# Create global variable
+
+		#========================================================#
+		# Select the dataset
+		#=========================================================#
+		dataset = d
