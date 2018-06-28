@@ -1,37 +1,6 @@
 from tensorflow.contrib import slim
 import tensorflow as tf
 
-
-# class TRAIN_CONFI():
-# 	master = ''
-# 	train_dir = 'checkpoints'
-# 	num_clones = 1
-# 	clones_on_cpu = False
-# 	worker_replicas = 1
-# 	num_ps_tasks = 0
-# 	num_reader = 1
-# 	num_preprocessing_threads = 4
-# 	log_very_n_steps = 10
-# 	save_summaries_secs = 600
-# 	task = 0
-#
-# class OPT_CONFIG():
-# 	weight_decay = 0.00004
-# 	optimizer = 'rmsprop'
-# 	adadelta_rho = 0.95
-# 	adagrad_initial_accumulator_value = 0.1
-# 	adam_beta1 = 0.9
-# 	adam_beta2 = 0.999
-# 	opt_epsilon = 1.0
-# 	ftrl_learning_rate_power = -0.5
-# 	ftrl_initial_accumulator_value = 0.1
-# 	ftrl_l1 = 0.0
-# 	ftrl_l2 = 0.0
-# 	momentum = 0.9
-# 	rmsprop_momentum = 0.9
-# 	rmsprop_decay = 0.9
-
-
 train_config = {
 	'master': '', # The address of the TensorFlow master to use.
 	'train_dir': 'checkpoints', # Directory where checkpoints and event logs are writeten to.
