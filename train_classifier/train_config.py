@@ -32,7 +32,7 @@ import tensorflow as tf
 # 	rmsprop_decay = 0.9
 
 
-TRAIN_CONFIG = {
+train_config = {
 	'master': '', # The address of the TensorFlow master to use.
 	'train_dir': 'checkpoints', # Directory where checkpoints and event logs are writeten to.
 	'num_closes': 1, # Number of model clones to deploy.
@@ -45,9 +45,6 @@ TRAIN_CONFIG = {
 	'save_summaries_secs': 600, # The frequency with which summaries are saved, in seconds
 	'save_interval_secs': 600, # The frequency with which the model is saved, in seconds.
 	'task': 0, # Task id of the replica running the training
-}
-
-OPT_CONGIG = {
 	'weight_decay': 0.00004,
 	'optimizer': 'rmsprop', #The name of the optimizer, one of "adadelta", "adagrad", "adam",'
                             #   '"ftrl", "momentum", "sgd" or "rmsprop".'
@@ -63,21 +60,15 @@ OPT_CONGIG = {
 	'momentum': 0.9, # The momentum for the MomentumOptimizer and RMSPropOptimizer.
 	'rmsprop_momentum': 0.9,
 	'rmsprop_decay': 0.9, # Decay term for RMSProp.
-}
-
-LRN_CONFIG = {
 	'learning_rate_decay_type': 'exponential',
-	'learning_rate': 0.01, # Initial learning rate.
-	'end_learning_rate': 0.0001, # The minimal end learning rate used by a polynomial decay learning rate.
+	'learning_rate': 0.01,  # Initial learning rate.
+	'end_learning_rate': 0.0001,  # The minimal end learning rate used by a polynomial decay learning rate.
 	'label_smoothing': 0.0,
 	'learning_rate_decay_factor': 0.94,
-	'num_epochs_per_decay': 2.0, # Number of epochs after which learning rate decays.
-	'sync_replicas': False, # Whether or not to synchronize the replicas during training.
-	'replicas_to_aggregate': 1, # The Number of gradients to collect before updating params.
-	'moving_average_decay': None, # The decay to use for the moving average.
-}
-
-DATASET_CONFIG = {
+	'num_epochs_per_decay': 2.0,  # Number of epochs after which learning rate decays.
+	'sync_replicas': False,  # Whether or not to synchronize the replicas during training.
+	'replicas_to_aggregate': 1,  # The Number of gradients to collect before updating params.
+	'moving_average_decay': None,  # The decay to use for the moving average.
 	'dataset_name': 'imagenet', # The name of the dataset to load.
 	'dataset_split_name': 'train', # The name of the train/test split.
 	'dataset_dir': None, # The directory where the dataset files are stored.
@@ -88,12 +79,9 @@ DATASET_CONFIG = {
 	'preprocessing_name': None, # If None, use the model name.
 	'batch_size': 32,
 	'train_image_size': None,
-	'max_number_of_steps': None
-}
-
-FINE_TURNING_CONFIG = {
-	'checkpoint_path': None, # The path to a checkpoint from which to fine-tune.
-	'checkpoint_exclude_scopes': None, # 'Comma-separated list of scopes of variables to exclude when restoring from a checkpoint.
-	'trainable_scopes': None, # Comma-separated list of scopes to filter the set of variables to train.'By default, None would train all the variables.
+	'max_number_of_steps': None,
+	'checkpoint_path': None,  # The path to a checkpoint from which to fine-tune.
+	'checkpoint_exclude_scopes': None,# 'Comma-separated list of scopes of variables to exclude when restoring from a checkpoint.
+	'trainable_scopes': None,# Comma-separated list of scopes to filter the set of variables to train.'By default, None would train all the variables.
 	'ignore_missing_vars': False,  # When restoring a checkpoint would ignore missing variables.
 }
