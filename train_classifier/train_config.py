@@ -4,7 +4,7 @@ import tensorflow as tf
 train_config = {
 	'master': '', # The address of the TensorFlow master to use.
 	'train_dir': 'checkpoints', # Directory where checkpoints and event logs are writeten to.
-	'num_closes': 1, # Number of model clones to deploy.
+	'num_clones': 1, # Number of model clones to deploy.
 	'clone_on_cpu': False, # Use CPUs to deploy clones.
 	'worker_replicas': 1, # Number of worker replicas.
 	'num_ps_tasks': 0, # The number of parameter servers.
