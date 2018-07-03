@@ -6,11 +6,14 @@ import functools
 
 import tensorflow as tf
 from networks import vgg_model
+from networks import cifarnet
 from tensorflow.contrib import slim
 
-networks_map = {'vgg_16': vgg_model.vgg_16}
+networks_map = {'vgg_16': vgg_model.vgg_16,
+				'cifarnet': cifarnet.cifarnet}
 
-arg_scopes_map = {'vgg_16': vgg_model.vgg_arg_scope}
+arg_scopes_map = {'vgg_16': vgg_model.vgg_arg_scope,
+				  'cifarnet': cifarnet.cifarnet_arg_scope}
 
 def get_network_fn(name, num_classes, weight_decay=0.0, is_training=False):
 	"""Returns a network_fn such as `logits, end_points = network_fn(images)`.
@@ -44,7 +47,7 @@ def get_network_fn(name, num_classes, weight_decay=0.0, is_training=False):
 	  ValueError: If network `name` is not recognized.
 	"""
 	if name not in networks_map:
-		raise ValueError('Name of network unknow %s' % name)
+ 		raise ValueError('Name of network unknow %s' % name)
 	func = networks_map[name]
 	@functools.wraps(func)
 	def network_fn(images, **kwargs):

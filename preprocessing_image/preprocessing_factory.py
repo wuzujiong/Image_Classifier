@@ -12,7 +12,8 @@ from preprocessing_image import vgg_preprocessing
 
 def get_preprocessing(name, is_training=False):
 	preprocessing_fn_map = {
-		'vgg_16': vgg_preprocessing
+		'vgg_16': vgg_preprocessing,
+		'cifarnet':vgg_preprocessing
 	}
 
 	if name not in preprocessing_fn_map:

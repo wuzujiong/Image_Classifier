@@ -8,7 +8,7 @@ from tensorflow.contrib import slim
 
 from datasets import dataset_utils
 
-_FILE_PATTERM = 'cifar10_%s.tfrecord'
+_FILE_PATTERN = 'cifar10_%s.tfrecord'
 SPLITS_TO_SIZES = {'train': 50000, 'test': 10000}
 
 _NUM_CLASSES = 10
@@ -66,7 +66,7 @@ def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
     labels_to_names = dataset_utils.read_label_file(dataset_dir)
 
   return slim.dataset.Dataset(
-      data_sources=file_pattern,
+      data_sources='F:/DL_Datasets/cifar-10-python/cifar10_train.tfrecord',
       reader=reader,
       decoder=decoder,
       num_samples=SPLITS_TO_SIZES[split_name],
