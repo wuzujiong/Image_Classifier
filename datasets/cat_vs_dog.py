@@ -140,5 +140,6 @@ if __name__ == '__main__':
                 image_ = sess.run(image_batch)
                 print('shape: ', image_[0].shape)
 
+
                 # plt.imshow(image_[0])
                 # plt.show()
