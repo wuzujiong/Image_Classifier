@@ -4,8 +4,6 @@ from __future__ import absolute_import
 
 import tensorflow as tf
 from tensorflow.contrib import slim
-
-
 from networks import resnet_utils
 
 
@@ -57,7 +55,9 @@ blocks_50 = [
 
 # def stack_block_dense(net, l)
 
-def resenet50_v2(inputs, num_classes=None, global_pool=False, spatial_squeeze=True, is_training=True, scope=None):
+def resenet50_v2(inputs, num_classes=None,
+                 global_pool=False, spatial_squeeze=True,
+                 is_training=True, scope=None):
     with tf.variable_scope(scope, 'resnet_v2', [inputs]) as sc:
         end_points_collection = sc.orignal_name_scope + '_end_points'
         with slim.arg_scope([slim.conv2d, bottleneck],

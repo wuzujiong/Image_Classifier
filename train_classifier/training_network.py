@@ -1,14 +1,11 @@
 ''' Train the image classifier '''
 import tensorflow as tf
-from tensorflow.python.ops import control_flow_ops
 from tensorflow.contrib import slim
-
-from model_deployment import model_deploy
+from deployment import model_deploy
 from train_classifier.train_config import train_config
 from datasets import dataset_factory
 from networks import nets_factory
 from preprocessing_image import preprocessing_factory
-from networks.vgg_model import vgg_arg_scope
 
 def configure_learning_rate(num_samples_per_epoch, global_step):
 	''' Configures the learning rate
@@ -30,7 +27,6 @@ def configure_learning_rate(num_samples_per_epoch, global_step):
 	if train_config['learning_rate_decay_type'] == 'exponential':
 		return tf.train.exponential_decay(train_config['learning_rate'],
 		                                  global_step,
-										  decay_steps,
 		                                  train_config['learning_rate_decay_factor'],
 		                                  staircase=True,
 		                                  name='exponential_decay_learning_rate')
@@ -161,7 +157,6 @@ def get_init_fn():
 def train():
 	if not train_config['dataset_dir']:
 		raise ValueError('You must set the dataset directory in "train_config.py"')
-
 	tf.logging.set_verbosity(tf.logging.INFO)
 
 	with tf.Graph().as_default():
@@ -169,22 +164,15 @@ def train():
 		# Config model deploy #
 		#========================================================#
 		# TODO: add a model deploy function and create global variable
-		deploy_config = model_deploy.DeploymentConfig(
-			num_clones=1,
-			clone_on_cpu=False,
-			replica_id=0,
-			num_replicas=1,
-			num_ps_tasks=0)
+		with tf.Graph().as_default():
+			deploy_config = model_deploy.DeploymentConfig(
+				num_clones=train_config['num_clones'],
+				clone_on_cpu=train_config['clone_on_cpu'],
+				replica_id=train_config['task'],
+				num_replicas=train_config['worker_replicas'],
+				num_ps_tasks=train_config['num_ps_tasks'])
 
 		# Create global variable
-		print('deploy_config.variables_device():', deploy_config.variables_device())
-		print('deploy_config.inputs_device(): ',deploy_config.inputs_device())
-		print('deploy_config.clone_device(): ', deploy_config.clone_device(0))
-		print('deploy_config.optimizer_device(): ', deploy_config.optimizer_device())
-		print('deploy_config.caching_device(): ', deploy_config.caching_device())
-		print(tf.get_default_graph)
-
-
 		with tf.device(deploy_config.variables_device()):
 			global_step = slim.create_global_step()
 		#========================================================#
@@ -194,6 +182,7 @@ def train():
 			train_config['dataset_name'],
 			train_config['dataset_split_name'],
 			train_config['dataset_dir'])
+
 		#========================================================#
 		# Select the Network model
 		#=========================================================#
@@ -214,62 +203,51 @@ def train():
 		#========================================================#
 		# Create a dataset provider that loads data from the dataset
 		#=========================================================#
-		with tf.device(deploy_config.inputs_device()):
-			with tf.name_scope(train_config['dataset_name'] + '_data_provider'):
-				provider = slim.dataset_data_provider.DatasetDataProvider(
-					dataset,
-					num_readers=train_config['num_readers'],
-					common_queue_capacity=20 * train_config['batch_size'],
-					common_queue_min=10 * train_config['batch_size'])
+		provider = slim.dataset_data_provider.DatasetDataProvider(
+			dataset,
+			num_readers=train_config['num_readers'],
+			common_queue_capacity=20 * train_config['batch_size'],
+			common_queue_min=10 * train_config['batch_size'])
+		[image, label] = provider.get(['image', 'label'])
+		label -= train_config['labels_offset']
+		train_image_size = train_config['train_image_size'] or network_fn.default_image_size
+		# TODO : Add a image_preprocessing function.
 
-			[image, label] = provider.get(['image', 'label'])
-			label -= train_config['labels_offset']
-			train_image_size = train_config['train_image_size'] or network_fn.default_image_size
-
-			image = image_preprocessing_fn(image, train_image_size, train_image_size)
-
-			images, labels = tf.train.batch(
-				[image, label],
-				batch_size=train_config['batch_size'],
-				num_threads=train_config['num_preprocessing_threads'],
-				capacity=5 * train_config['batch_size'])
-			labels = slim.one_hot_encoding(
-				labels,
-				dataset.num_classes - train_config['labels_offset'])
-
-			batch_queue = slim.prefetch_queue.prefetch_queue(
-				[images, labels],
-				capacity=2 * train_config['num_clones'])
+		images, labels = tf.train.batch(
+			[image, label],
+			batch_size=train_config['batch_size'],
+			num_threads=train_config['num_preprocessing_threads'],
+			capacity=5 * train_config['batch_size'])
+		labels = slim.one_hot_encoding(
+			labels,
+			dataset.num_classes - train_config['labels_offset'])
+		batch_queue = slim.prefetch_queue.prefetch_queue(
+			[images, labels],
+			capacity=2 * train_config['num_clones'])
 
 		#========================================================#
 		# Define the model
 		#=========================================================#
 		def clone_fn(batch_queue):
 			images, labels = batch_queue.dequeue()
-
-			# TODO: Add a model arg_scope for model.
-			# arg_scope = vgg_arg_scope()
-			# with slim.arg_scope(arg_scope):
 			logits, end_points = network_fn(images)
 
-		# ========================================================#
-		# Define the model loss function
-		# =========================================================#
-		# 	if 'AuxLogits' in end_points:
-		# 		slim.losses.softmax_cross_entropy(
-		# 			end_points['AuxLogits'],
-		# 			labels,
-		# 			label_smoothing=train_config['label_smoothing'],
-		# 			weights=0.4,
-		# 			scope='aux_loss')
-		# 	with tf.device('/device:CPU:0'):
-		# 		slim.losses.softmax_cross_entropy(
-		# 			logits,
-		# 			labels,
-		# 			label_smoothing=train_config['label_smoothing'],
-		# 			weights=1.0)
+			# ========================================================#
+			# Define the model loss function
+			# =========================================================#
+			if 'AuxLogits' in end_points:
+				slim.losses.softmax_cross_entropy(
+					end_points['AuxLogits'],
+					labels,
+					label_smoothing=train_config['label_smoothing'],
+					weights=0.4,
+					scope='aux_loss')
+			slim.losses.softmax_cross_entropy(
+				logits,
+				labels,
+				label_smoothing=train_config['label_smoothing'],
+				weights=1.0)
 			return end_points
-
 
 		# Gather initial summaries
 		summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
@@ -286,8 +264,7 @@ def train():
 		for end_point in end_points:
 			x = end_points[end_point]
 			summaries.add(tf.summary.histogram('activations/' + end_point, x))
-			summaries.add(tf.summary.scalar('sparsity/' + end_point,
-											tf.nn.zero_fraction(x)))
+			summaries.add(tf.summary.scalar('sparsity/' + end_point, tf.nn.zero_fraction((x))))
 
 		# Add summaries for losses
 		for loss in tf.get_collection(tf.GraphKeys.LOSSES, first_clones_scope):
@@ -311,7 +288,7 @@ def train():
 		# Configure optimization procedure
 		#=========================================================#
 		with tf.device(deploy_config.optimizer_device()):
-			learning_rate = configure_learning_rate(dataset.num_samples, global_step)
+			learning_rate = configure_learning_rate(dataset.num_classes, global_step)
 			optimizer = configure_optimizer(learning_rate)
 			summaries.add(tf.summary.scalar('learning_rate', learning_rate))
 
@@ -343,7 +320,6 @@ def train():
 
 		update_ops.append(grad_updates)
 		update_op = tf.group(*update_ops)
-
 		with tf.control_dependencies([update_op]):
 			train_tensor = tf.identity(total_loss, name='train_op')
 
@@ -358,29 +334,18 @@ def train():
 		###########################
 		# Kicks off the training. #
 		###########################
-		gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=train_config['gpu_memory_fraction'])
-		conig = tf.ConfigProto(log_device_placement=False,
-							   gpu_options=gpu_options)
-		saver = tf.train.Saver(max_to_keep=5,
-							   keep_checkpoint_every_n_hours=0.1,
-							   write_version=2,
-							   pad_step_number=False)
-
-
 		slim.learning.train(
 			train_tensor,
-			logdir=train_config['train_dir'],
-			master='',
-			is_chief=True,
+			logdir=train_config['dataset_dir'],
+			master=train_config['master'],
+			is_chief=(train_config['task'] == 0),
 			init_fn=get_init_fn(),
 			summary_op=summary_op,
 			number_of_steps=train_config['max_number_of_steps'],
 			log_every_n_steps=train_config['log_every_n_steps'],
 			save_summaries_secs=train_config['save_summaries_secs'],
-			saver=saver,
 			save_interval_secs=train_config['save_interval_secs'],
-			# session_config=conig,
-			sync_optimizer=None)
+			sync_optimizer=optimizer if train_config['sync_replicas'] else None)
 
 if __name__ == '__main__':
 	train()
