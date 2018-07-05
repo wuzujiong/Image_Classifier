@@ -7,6 +7,7 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 from datasets import dataset_utils
 import matplotlib.pyplot as plt
+from preprocessing_image import preprocessing_factory
 
 _FILE_PATTERN = 'CatVSDog_%s.tfrecord'
 _SPLITS_TO_SIZES = {'train': 20000, 'test': 5000}
@@ -25,6 +26,7 @@ _ITEMS_TO_DESCRIPTIONS = {
 _SPLITE_NAME = 'train'
 _BATCH_SIZE = 1
 _NUM_CLASSES = 2
+_IMAGE_SIZE = 229
 
 
 def _get_split(split_name, dataset_dir, file_pattern, reader,
@@ -52,16 +54,14 @@ def _get_split(split_name, dataset_dir, file_pattern, reader,
 	if reader is None:
 		reader = tf.TFRecordReader
 	keys_to_features = {
-		'image/encode': tf.FixedLenFeature((), tf.string, default_value=''),
+		'image/encoded': tf.FixedLenFeature((), tf.string, default_value=''),
 		'image/format': tf.FixedLenFeature((), tf.string, default_value='JPEG'),
 		'image/classes/label': tf.FixedLenFeature([1], dtype=tf.int64),
-		'image/shape': tf.FixedLenFeature([3], tf.int64)
 	}
 
 	items_to_handlers = {
-		'image': slim.tfexample_decoder.Image('image/encode', 'image/format'),
+		'image': slim.tfexample_decoder.Image('image/encoded', 'image/format'),
 		'label': slim.tfexample_decoder.Tensor('image/classes/label'),
-		'shape': slim.tfexample_decoder.Tensor('image/shape')
 	}
 
 	decoder = slim.tfexample_decoder.TFExampleDecoder(keys_to_features,
@@ -87,58 +87,58 @@ def decode_from_tfrecord(filenames):
        features={
            'image/encode': tf.FixedLenFeature([], tf.string),
            'image/classes/label': tf.FixedLenFeature([1],tf.int64),
-	       'image/format': tf.FixedLenFeature([], tf.string),
-	       'image/height': tf.FixedLenFeature([1], tf.int64),
-	       'image/width': tf.FixedLenFeature([1], tf.int64),
-	       'image/shape': tf.FixedLenFeature([3], tf.int64)})
-
-
+	       'image/format': tf.FixedLenFeature([], tf.string)})
 	image = tf.image.decode_jpeg(features['image/encode'])
 	return image
 
-def _preprocessing_image(image):
-	shape = tf.shape(image)
+
+def _preprocessing_image (image):
+    image_preprocessing_fn = preprocessing_factory.get_preprocessing(
+        name='resnet', is_training=True)
+    image = image_preprocessing_fn(image, _IMAGE_SIZE, _IMAGE_SIZE)
+    return image
 
 
-def get_images_data():
-	data_set = _get_split(_SPLITE_NAME,
-						  dataset_dir=_DATASET_DIR,
-						  file_pattern=_FILE_PATTERN,
-						  reader=None,
-						  split_to_size=_SPLITS_TO_SIZES,
-						  items_to_descriptions=_ITEMS_TO_DESCRIPTIONS,
-						  num_classes=_NUM_CLASSES)
-	provider = slim.dataset_data_provider.DatasetDataProvider(
-		data_set,
-		num_readers=4,
-		common_queue_capacity=20 * _BATCH_SIZE,
-		common_queue_min=10 * _BATCH_SIZE)
-	[image, label] = provider.get(['image', 'label'])
-	shape = tf.shape(image)
-	image = tf.image.resize_images(image, size=[shape[0], shape[1]])
-	# image.set_shape([375,499,3])
-	images, labels = tf.train.batch(
-		[image, label],
-		batch_size=_BATCH_SIZE,
-		num_threads=1,
-		capacity=5 * _BATCH_SIZE)
-	labels = slim.one_hot_encoding(labels, _NUM_CLASSES)
-	batch_queue = slim.prefetch_queue.prefetch_queue(
-		[images, labels], capacity= 2)
-	image_batch, label_batch = batch_queue.dequeue()
+def get_images_data ():
+    data_set = _get_split(_SPLITE_NAME,
+                          dataset_dir=_DATASET_DIR,
+                          file_pattern=_FILE_PATTERN,
+                          reader=None,
+                          split_to_size=_SPLITS_TO_SIZES,
+                          items_to_descriptions=_ITEMS_TO_DESCRIPTIONS,
+                          num_classes=_NUM_CLASSES)
+    provider = slim.dataset_data_provider.DatasetDataProvider(
+        data_set,
+        num_readers=4,
+        common_queue_capacity=20 * _BATCH_SIZE,
+        common_queue_min=10 * _BATCH_SIZE)
+    [image, label] = provider.get(['image', 'label'])
+    image = _preprocessing_image(image)
+    images, labels = tf.train.batch(
+        [image, label],
+        batch_size=_BATCH_SIZE,
+        num_threads=1,
+        capacity=5 * _BATCH_SIZE)
+    labels = slim.one_hot_encoding(labels, _NUM_CLASSES)
+    batch_queue = slim.prefetch_queue.prefetch_queue(
+        [images, labels], capacity=2)
+    image_batch, label_batch = batch_queue.dequeue()
 
-	return image_batch, label_batch, shape
+    return image_batch, label_batch
 
-image_batch, label_batch, shape = get_images_data()
+
+image_batch, label_batch = get_images_data()
 # filename = os.path.join(_DATASET_DIR, 'CatVSDog_test.tfrecord')
 # image = decode_from_tfrecord([filename])
 if __name__ == '__main__':
-	init = tf.initialize_all_variables()
-	with tf.Session() as sess:
-		sess.run(init)
-		threads = tf.train.start_queue_runners(sess=sess)
-		for i in range(1):
-			image_ = sess.run(image_batch)
-			shape_ = sess.run(shape)
-			# plt.imshow(image_[0])
-			# plt.show()
+    with tf.device('cpu:0'):
+        init = tf.initialize_all_variables()
+        with tf.Session() as sess:
+            sess.run(init)
+            threads = tf.train.start_queue_runners(sess=sess)
+            for i in range(10):
+                image_ = sess.run(image_batch)
+                print('shape: ', image_[0].shape)
+
+                # plt.imshow(image_[0])
+                # plt.show()

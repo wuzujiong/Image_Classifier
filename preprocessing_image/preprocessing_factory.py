@@ -7,13 +7,14 @@ from __future__ import print_function
 import tensorflow as tf
 from tensorflow.contrib import slim
 
-from preprocessing_image import vgg_preprocessing
+from preprocessing_image import vgg_preprocessing, inception_preprocessing
 
 
 def get_preprocessing(name, is_training=False):
 	preprocessing_fn_map = {
 		'vgg_16': vgg_preprocessing,
-		'cifarnet':vgg_preprocessing
+		'cifarnet':vgg_preprocessing,
+        'resnet': inception_preprocessing
 	}
 
 	if name not in preprocessing_fn_map:
