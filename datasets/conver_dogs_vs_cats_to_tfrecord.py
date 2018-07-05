@@ -8,26 +8,22 @@ from __future__ import print_function
 
 import os
 import sys
-import tarfile
 
 import numpy as np
-from six.moves import cPickle
-from six.moves import urllib
 import tensorflow as tf
-from tensorflow.contrib import slim
-import cv2
+
 
 
 from datasets import dataset_utils
 
 # dataset_dir = 'F:/DL_Datasets/Dogs vs. Cats Redux/Dogs vs. Cats Redux_Images' # WINDOWS
-dataset_dir = 'F:/DL_Datasets/Dogs vs. Cats Redux/images'
+dataset_dir = 'F:/DL_Datasets/Dogs vs. Cats Redux/Dogs vs. Cats Redux_Images'
 # dataset_dir = '/Users/prmeasure/Desktop/Dogs vs. Cats Redux/images' # MAC
 
 tfrecord_save_dir = 'F:/DL_Datasets/Dogs vs. Cats Redux/Dogs vs. Cats Redux_tfrecorder' # WINDOWS
 # tfrecord_save_dir = '/Users/prmeasure/Desktop/Dogs vs. Cats Redux/Dogs vs. Cats Redux_tfrecorder'
 
-_NUM_TRAIN = 10
+_NUM_TRAIN = 20000
 _NUM_TEST = 5000
 
 def _get_output_filename(dataset_dir, split_name):

@@ -1,6 +1,9 @@
 import tensorflow as tf
 from tensorflow.contrib import slim
 
+from datasets import dataset_utils
+import matplotlib.pyplot as plt
+
 from train_classifier.train_config import train_config
 from datasets import dataset_factory
 from preprocessing_image import preprocessing_factory
@@ -41,12 +44,15 @@ def get_batch_data():
     image_batch, label_batch = batch_queue.dequeue()
     return image_batch, label_batch, dataset
 
-# image_batch, label_batch,_ = get_batch_data()
-#
-# if __name__ == '__main__':
-#     with tf.Session() as sess:
-#         tf.train.start_queue_runners()
-#         with tf.device('gpu:0'):
-#             for i in range(10):
-#                 images_, labels_ = sess.run([image_batch, label_batch])
-#                 print(images_.shape)
+image_batch, label_batch,_ = get_batch_data()
+
+if __name__ == '__main__':
+    with tf.Session() as sess:
+        coord = tf.train.Coordinator()
+        tf.train.start_queue_runners(sess=sess, coord=coord)
+        with tf.device('gpu:0'):
+            for i in range(10):
+                images_, labels_ = sess.run([image_batch, label_batch])
+                print(labels_)
+        coord.request_stop()
+        coord.join()

@@ -7,13 +7,16 @@ import functools
 import tensorflow as tf
 from networks import vgg_model
 from networks import cifarnet
+from networks import resnet_model_v2, resnet_v2
 from tensorflow.contrib import slim
 
 networks_map = {'vgg_16': vgg_model.vgg_16,
-				'cifarnet': cifarnet.cifarnet}
+				'cifarnet': cifarnet.cifarnet,
+                'resnet': resnet_v2.resnet_v2_50}
 
 arg_scopes_map = {'vgg_16': vgg_model.vgg_arg_scope,
-				  'cifarnet': cifarnet.cifarnet_arg_scope}
+				  'cifarnet': cifarnet.cifarnet_arg_scope,
+                  'resnet': resnet_v2.resnet_arg_scope}
 
 def get_network_fn(name, num_classes, weight_decay=0.0, is_training=False):
 	"""Returns a network_fn such as `logits, end_points = network_fn(images)`.

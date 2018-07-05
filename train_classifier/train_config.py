@@ -3,7 +3,7 @@ import tensorflow as tf
 
 train_config = {
 	'master': '', # The address of the TensorFlow master to use.
-	'train_dir': 'F:/DL_Datasets/vgg_16_checkpoint', # Directory where checkpoints and event logs are writeten to.
+	'train_dir': 'F:/DL_Datasets/Dogs vs. Cats Redux/checkpoints', # Directory where checkpoints and event logs are writeten to.
 	'num_clones': 1, # Number of model clones to deploy.
 	'clone_on_cpu': False, # Use CPUs to deploy clones, False for GPU train.
 	'worker_replicas': 1, # Number of worker replicas.
@@ -30,7 +30,7 @@ train_config = {
 	'rmsprop_momentum': 0.9,
 	'rmsprop_decay': 0.9, # Decay term for RMSProp.
 	'learning_rate_decay_type': 'exponential',
-	'learning_rate': 0.01,  # Initial learning rate.
+	'learning_rate': 0.0001,  # Initial learning rate.
 	'end_learning_rate': 0.00001,  # The minimal end learning rate used by a polynomial decay learning rate.
 	'label_smoothing': 0.0,
 	'learning_rate_decay_factor': 0.1,
@@ -44,7 +44,7 @@ train_config = {
 	'labels_offset': 0,  # 'An offset for the labels in the dataset. This flag is primarily used to '
                          # 'evaluate the VGG and ResNet architectures which do not use a background '
                          # 'class for the ImageNet dataset.'
-	'model_name': 'vgg_16',
+	'model_name': 'resnet',
 	'preprocessing_name': None, # If None, use the model name.
 	'batch_size': 32,
 	'train_image_size': 224,

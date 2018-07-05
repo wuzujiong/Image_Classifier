@@ -7,6 +7,20 @@ from tensorflow.contrib import slim
 from networks import resnet_utils
 
 
+def resnet_arg_scope(weight_decay=0.005):
+    ''' Define the VGG arg scope.
+    Args:
+    	weight_decay: The l2 regularization coefficient.
+    Return:
+    	A arg_scope
+    '''
+    with slim.arg_scope ( [slim.conv2d , slim.fully_connected] ,
+                          activation_fn=tf.nn.relu ,
+                          weights_regularizer=slim.l2_regularizer ( weight_decay ) ,
+                          biases_initializer=tf.zeros_initializer ):
+        with slim.arg_scope ( [slim.conv2d] , padding='SAME' ) as arg_sc:
+            return arg_sc
+
 def conv2d_same(inputs, num_outputs, kernel_size, rate=1, stride=1, scope=None):
     if stride == 1:
         return slim.conv2d(inputs, num_outputs, kernel_size, rate=rate, stride=1, padding='SAME', scope=scope)
@@ -39,7 +53,7 @@ def bottleneck(inputs, depth, depth_bottleneck, stride, rate=1,
                                    normalizer_fn=None, activation_fn=None,
                                    scope='shortcut')
         residual = slim.conv2d(preact, depth_bottleneck, [1, 1], stride=1, scope='conv1')
-        residual = conv2d_same(residual, depth_bottleneck, 3, stride, rate=rate, scope='conv2')
+        residual = conv2d_same(residual, depth_bottleneck, 3, rate, stride, scope='conv2')
         residual = slim.conv2d(residual, depth, [1, 1], stride=1,
                                normalizer_fn=None,
                                activation_fn=None,
@@ -55,11 +69,14 @@ blocks_50 = [
 
 # def stack_block_dense(net, l)
 
-def resenet50_v2(inputs, num_classes=None,
-                 global_pool=False, spatial_squeeze=True,
-                 is_training=True, scope=None):
+def resnet50_v2(inputs,
+                num_classes=2,
+                 global_pool=False,
+                spatial_squeeze=True,
+                 is_training=True,
+                scope='resnet'):
     with tf.variable_scope(scope, 'resnet_v2', [inputs]) as sc:
-        end_points_collection = sc.orignal_name_scope + '_end_points'
+        end_points_collection = sc.original_name_scope + '_end_points'
         with slim.arg_scope([slim.conv2d, bottleneck],
                             outputs_collections=end_points_collection):
             with slim.arg_scope([slim.batch_norm], is_training=is_training):
@@ -104,8 +121,10 @@ def resenet50_v2(inputs, num_classes=None,
                     end_points[sc.name + '/spatial_squeeze'] = net
 
                 end_points['predictions'] = slim.softmax(net, scope='predictions')
+                return net, end_points
 
-resenet50_v2.defaults_image_size = 224
+
+resnet50_v2.defaults_image_size = 224
 
 
 

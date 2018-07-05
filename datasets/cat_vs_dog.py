@@ -5,13 +5,14 @@ from __future__ import print_function
 import os
 import tensorflow as tf
 from tensorflow.contrib import slim
-from datasets import dataset_utils
-import matplotlib.pyplot as plt
+# from datasets import dataset_utils
+# import matplotlib.pyplot as plt
 from preprocessing_image import preprocessing_factory
 
 _FILE_PATTERN = 'CatVSDog_%s.tfrecord'
 _SPLITS_TO_SIZES = {'train': 20000, 'test': 5000}
-_DATASET_DIR = '/Users/prmeasure/Desktop/Dogs vs. Cats Redux/Dogs vs. Cats Redux_tfrecorder'
+# _DATASET_DIR = '/Users/prmeasure/Desktop/Dogs vs. Cats Redux/Dogs vs. Cats Redux_tfrecorder' # MAC
+_DATASET_DIR = 'F:\DL_Datasets\Dogs vs. Cats Redux\Dogs vs. Cats Redux_tfrecorder' # WINDOWS
 
 CATVSDOG_LABELS = {
 	'cat': (0, 'cat'),
@@ -24,7 +25,7 @@ _ITEMS_TO_DESCRIPTIONS = {
 }
 
 _SPLITE_NAME = 'train'
-_BATCH_SIZE = 1
+_BATCH_SIZE = 64
 _NUM_CLASSES = 2
 _IMAGE_SIZE = 229
 
@@ -50,7 +51,6 @@ def _get_split(split_name, dataset_dir, file_pattern, reader,
 	if split_name not in split_to_size:
 		raise ValueError('split name %s was not recognized.' % split_name)
 	file_pattern = os.path.join(dataset_dir, file_pattern % split_name)
-
 	if reader is None:
 		reader = tf.TFRecordReader
 	keys_to_features = {
@@ -85,16 +85,15 @@ def decode_from_tfrecord(filenames):
 	features = tf.parse_single_example(
 		value,
        features={
-           'image/encode': tf.FixedLenFeature([], tf.string),
+           'image/encoded': tf.FixedLenFeature([], tf.string),
            'image/classes/label': tf.FixedLenFeature([1],tf.int64),
 	       'image/format': tf.FixedLenFeature([], tf.string)})
-	image = tf.image.decode_jpeg(features['image/encode'])
+	image = tf.image.decode_jpeg(features['image/encoded'])
 	return image
 
 
 def _preprocessing_image (image):
-    image_preprocessing_fn = preprocessing_factory.get_preprocessing(
-        name='resnet', is_training=True)
+    image_preprocessing_fn = preprocessing_factory.get_preprocessing(name='resnet', is_training=True)
     image = image_preprocessing_fn(image, _IMAGE_SIZE, _IMAGE_SIZE)
     return image
 
@@ -117,8 +116,9 @@ def get_images_data ():
     images, labels = tf.train.batch(
         [image, label],
         batch_size=_BATCH_SIZE,
-        num_threads=1,
+        num_threads=4,
         capacity=5 * _BATCH_SIZE)
+    labels = tf.squeeze(labels, 1)
     labels = slim.one_hot_encoding(labels, _NUM_CLASSES)
     batch_queue = slim.prefetch_queue.prefetch_queue(
         [images, labels], capacity=2)
@@ -131,15 +131,15 @@ image_batch, label_batch = get_images_data()
 # filename = os.path.join(_DATASET_DIR, 'CatVSDog_test.tfrecord')
 # image = decode_from_tfrecord([filename])
 if __name__ == '__main__':
-    with tf.device('cpu:0'):
-        init = tf.initialize_all_variables()
-        with tf.Session() as sess:
-            sess.run(init)
-            threads = tf.train.start_queue_runners(sess=sess)
+
+    with tf.Session() as sess:
+        # sess.run(init)
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+        with tf.device('gpu:0'):
             for i in range(10):
-                image_ = sess.run(image_batch)
-                print('shape: ', image_[0].shape)
-
-
-                # plt.imshow(image_[0])
-                # plt.show()
+                image_, label_ = sess.run([image_batch, label_batch])
+                print(label_.shape)
+                print(label_)
+        coord.request_stop()
+        coord.join()
